@@ -1,8 +1,13 @@
-from fastapi import FastAPI
+import logging
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from app.core.config import settings
 from app.core.database import Base, engine
 from app.api.v1 import api_router
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("bikecare")
 
 # Initialize FastAPI application
 app = FastAPI(
@@ -14,15 +19,34 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# Configure CORS
-origins = [str(origin) for origin in settings.BACKEND_CORS_ORIGINS] if settings.BACKEND_CORS_ORIGINS else ["*"]
+# Configure CORS Middleware
+# Explicitly whitelist production Vercel frontend, local development hosts, and all Vercel previews
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=[
+        "https://bikecare-gamma.vercel.app",
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+        *settings.BACKEND_CORS_ORIGINS,
+    ],
+    allow_origin_regex=r"^https:\/\/.*\.vercel\.app$|^http:\/\/localhost(:\d+)?$|^http:\/\/127\.0\.0\.1(:\d+)?$",
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Ensure any unhandled exception returns structured JSON while preserving CORS headers."""
+    logger.error(f"Unhandled error on {request.method} {request.url.path}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An internal database or server error occurred. Please check database configuration."},
+    )
 
 
 # Include API v1 router
@@ -36,9 +60,9 @@ def on_startup():
         Base.metadata.create_all(bind=engine)
 
 
-@app.get("/", tags=["System"])
+@app.api_route("/", methods=["GET", "HEAD"], tags=["System"])
 def root():
-    """Root entry point with documentation links."""
+    """Root entry point supporting GET and HEAD probes from Render/uptime monitors."""
     return {
         "message": "Welcome to BikeCare API",
         "version": "1.0.0",

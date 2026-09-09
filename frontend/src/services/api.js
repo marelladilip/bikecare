@@ -1,7 +1,17 @@
 import axios from 'axios'
 
+// Normalize baseURL from environment variable or fallback to local proxy
+const getBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
+  if (!envUrl) return '/api/v1'
+
+  const trimmed = envUrl.trim().replace(/\/+$/, '')
+  if (trimmed.endsWith('/api/v1')) return trimmed
+  return `${trimmed}/api/v1`
+}
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
+  baseURL: getBaseUrl(),
   headers: { 'Content-Type': 'application/json' },
   timeout: 15000,
 })
@@ -19,7 +29,7 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !error.config?.url?.includes('/auth/login')) {
       localStorage.removeItem('bikecare_token')
       localStorage.removeItem('bikecare_user')
       window.location.href = '/login'

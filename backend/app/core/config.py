@@ -13,6 +13,13 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "sqlite:///./bikecare.db"
 
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def fix_database_url(cls, v: str) -> str:
+        if isinstance(v, str) and v.startswith("postgres://"):
+            return v.replace("postgres://", "postgresql://", 1)
+        return v
+
     # JWT
     SECRET_KEY: str = "bikecare-super-secret-default-key-change-in-production-2024"
     ALGORITHM: str = "HS256"
@@ -20,21 +27,39 @@ class Settings(BaseSettings):
 
     # CORS
     BACKEND_CORS_ORIGINS: List[str] = [
+        "https://bikecare-gamma.vercel.app",
         "http://localhost:5173",
         "http://localhost:3000",
         "https://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000",
     ]
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
+        default_origins = [
+            "https://bikecare-gamma.vercel.app",
+            "http://localhost:5173",
+            "http://localhost:3000",
+            "https://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://127.0.0.1:3000",
+        ]
         if isinstance(v, str) and not v.startswith("["):
-            return [i.strip() for i in v.split(",")]
+            origins = [i.strip() for i in v.split(",") if i.strip()]
+            return list(set(default_origins + origins))
         elif isinstance(v, str) and v.startswith("["):
-            return json.loads(v)
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return list(set(default_origins + [str(p) for p in parsed if p != "*"]))
+            except Exception:
+                pass
+            return default_origins
         elif isinstance(v, list):
-            return v
-        raise ValueError(v)
+            return list(set(default_origins + [str(p) for p in v if p != "*"]))
+        return default_origins
 
     # Supabase (Optional for direct storage / auth hooks)
     SUPABASE_URL: str = ""
