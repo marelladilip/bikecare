@@ -67,11 +67,20 @@ app.add_middleware(
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
 
+from sqlalchemy import text
+
 @app.on_event("startup")
 def on_startup():
-    """Verify engine and create tables if using SQLite local development fallback."""
-    if settings.DATABASE_URL.startswith("sqlite"):
+    """Verify engine and ensure tables/columns are synchronized in SQLite and PostgreSQL."""
+    try:
         Base.metadata.create_all(bind=engine)
+        if not settings.DATABASE_URL.startswith("sqlite"):
+            with engine.connect() as conn:
+                conn.execute(text("ALTER TABLE profiles ADD COLUMN IF NOT EXISTS hashed_password TEXT;"))
+                conn.execute(text("ALTER TABLE profiles DROP CONSTRAINT IF EXISTS profiles_id_fkey;"))
+                conn.commit()
+    except Exception as e:
+        logger.warning(f"Startup schema sync note: {e}")
 
 
 @app.api_route("/", methods=["GET", "HEAD"], tags=["System"])
