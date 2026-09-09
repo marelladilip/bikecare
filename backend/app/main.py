@@ -19,8 +19,33 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# Configure CORS Middleware
-# Explicitly whitelist production Vercel frontend, local development hosts, and all Vercel previews
+# Outermost CORS middleware to ensure CORS headers are ALWAYS attached even on 500 exceptions
+@app.middleware("http")
+async def cors_headers_middleware(request: Request, call_next):
+    origin = request.headers.get("origin")
+    
+    if request.method == "OPTIONS":
+        response = JSONResponse(status_code=200, content={"status": "ok"})
+    else:
+        try:
+            response = await call_next(request)
+        except Exception as exc:
+            logger.error(f"Unhandled error on {request.method} {request.url.path}: {exc}", exc_info=True)
+            response = JSONResponse(
+                status_code=500,
+                content={"detail": f"Database or internal server error: {str(exc)}"},
+            )
+
+    if origin:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Access-Control-Expose-Headers"] = "*"
+    return response
+
+
+# Standard CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -37,17 +62,6 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"],
 )
-
-
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    """Ensure any unhandled exception returns structured JSON while preserving CORS headers."""
-    logger.error(f"Unhandled error on {request.method} {request.url.path}: {exc}", exc_info=True)
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "An internal database or server error occurred. Please check database configuration."},
-    )
-
 
 # Include API v1 router
 app.include_router(api_router, prefix=settings.API_V1_STR)
