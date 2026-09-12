@@ -14,8 +14,11 @@ logger = logging.getLogger("bikecare.email")
 def _send_via_resend(to_email: str, subject: str, html_content: str, text_content: str, sender_name: str) -> bool:
     """Send email via Resend HTTP API (Port 443 - never blocked on cloud hosts)."""
     try:
-        from_email = settings.EMAILS_FROM_EMAIL or "onboarding@resend.dev"
-        from_header = f"{sender_name} <{from_email}>" if "@" in from_email else from_email
+        from_email = settings.EMAILS_FROM_EMAIL.strip() if settings.EMAILS_FROM_EMAIL else ""
+        if not from_email or "gmail.com" in from_email or "yahoo" in from_email:
+            from_email = "onboarding@resend.dev"
+        from_header = f"{sender_name} <{from_email}>"
+
         payload = json.dumps({
             "from": from_header,
             "to": [to_email],
@@ -35,9 +38,13 @@ def _send_via_resend(to_email: str, subject: str, html_content: str, text_conten
             method="POST",
         )
         with urllib.request.urlopen(req, timeout=10) as resp:
+            resp_data = resp.read().decode("utf-8")
             if 200 <= resp.status < 300:
-                logger.info(f"Successfully sent OTP email to {to_email} via Resend API")
+                logger.info(f"Successfully sent OTP email to {to_email} via Resend API: {resp_data}")
                 return True
+    except urllib.error.HTTPError as e:
+        err_msg = e.read().decode("utf-8")
+        logger.error(f"Resend HTTPError {e.code}: {err_msg}")
     except Exception as e:
         logger.error(f"Resend API email error: {e}", exc_info=True)
     return False

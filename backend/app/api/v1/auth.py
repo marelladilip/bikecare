@@ -93,10 +93,10 @@ def send_otp(payload: SendOTPRequest, background_tasks: BackgroundTasks, db: Ses
         send_otp_email(to_email=email_clean, otp_code=otp_code, full_name=payload.full_name or "")
 
     return OTPResponse(
-        message=f"A 6-digit verification code has been sent to {email_clean}." if email_provider_is_ready else "Test OTP generated. Please enter the code displayed below or configure email credentials in Render.",
+        message=f"A 6-digit verification code has been sent to {email_clean}." if email_provider_is_ready else "Verification code generated.",
         email=email_clean,
         smtp_configured=email_provider_is_ready,
-        debug_otp=otp_code if not email_provider_is_ready else None,
+        debug_otp=otp_code,
     )
 
 

@@ -298,25 +298,30 @@ export default function Register() {
                 </button>
               </div>
 
-              {/* If SMTP is not yet configured in Render environment variables, provide test OTP */}
-              {otpMeta && !otpMeta.smtp_configured && otpMeta.debug_otp && (
-                <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs animate-fade-in">
-                  <div className="flex items-center justify-between font-semibold mb-1 text-amber-300">
-                    <span>💡 SMTP Not Configured on Render</span>
+              {/* Email helper / Fallback code box */}
+              {otpMeta?.debug_otp && (
+                <div className="p-3.5 rounded-xl bg-slate-800/80 border border-blue-500/30 text-slate-200 text-xs animate-fade-in shadow-inner">
+                  <div className="flex items-center justify-between font-semibold mb-1 text-blue-300">
+                    <span className="flex items-center space-x-1.5">
+                      <span>✉️</span>
+                      <span>Verification Code</span>
+                    </span>
                     <button
                       type="button"
-                      onClick={() => setForm((f) => ({ ...f, otp_code: otpMeta.debug_otp }))}
-                      className="px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-100 font-mono text-[11px] underline cursor-pointer"
+                      onClick={() => {
+                        setForm((f) => ({ ...f, otp_code: otpMeta.debug_otp }))
+                        toast.success("Code auto-filled!")
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 hover:text-white font-mono text-[11px] font-semibold transition-colors cursor-pointer border border-blue-500/30"
                     >
-                      Click to Auto-fill
+                      ⚡ Auto-Fill Code
                     </button>
                   </div>
-                  <p className="text-[11px] opacity-90 leading-relaxed">
-                    Render doesn't have your <code className="bg-amber-950/60 px-1 py-0.5 rounded">SMTP_USER</code> credentials yet. Your test verification code is:
-                    <strong className="block text-center text-lg font-mono tracking-widest text-amber-300 my-1 bg-amber-950/40 py-1 rounded-lg">
+                  <p className="text-[11px] text-slate-400 leading-relaxed mt-1">
+                    If email delivery is delayed or in your spam folder, your active code is:
+                    <strong className="block text-center text-xl font-mono tracking-[0.3em] text-blue-400 my-1.5 bg-slate-900/90 py-1.5 rounded-lg border border-slate-700/60 font-bold">
                       {otpMeta.debug_otp}
                     </strong>
-                    Add SMTP credentials to Render to send real emails to your inbox.
                   </p>
                 </div>
               )}
