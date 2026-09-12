@@ -1,7 +1,7 @@
 import secrets
 import uuid
 from datetime import datetime, timezone, timedelta
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from app.core.config import settings
@@ -38,7 +38,7 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
     response_model=OTPResponse,
     summary="Send a 6-digit OTP verification email for account registration",
 )
-def send_otp(payload: SendOTPRequest, db: Session = Depends(get_db)):
+def send_otp(payload: SendOTPRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """Generate and dispatch a 6-digit OTP to the specified email address."""
     email_clean = payload.email.strip().lower()
     
@@ -75,8 +75,13 @@ def send_otp(payload: SendOTPRequest, db: Session = Depends(get_db)):
     db.add(otp_record)
     db.commit()
 
-    # 5. Dispatch Email
-    send_otp_email(to_email=email_clean, otp_code=otp_code, full_name=payload.full_name or "")
+    # 5. Dispatch Email in background so the API responds instantly without blocking on SMTP
+    background_tasks.add_task(
+        send_otp_email,
+        to_email=email_clean,
+        otp_code=otp_code,
+        full_name=payload.full_name or "",
+    )
 
     return OTPResponse(
         message=f"A 6-digit verification code has been sent to {email_clean}.",

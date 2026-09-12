@@ -115,9 +115,9 @@ Vehicle'Nest Team • By Marella Dilip
 
         # Connect to SMTP server
         if settings.SMTP_PORT == 465:
-            server = smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15)
+            server = smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, timeout=8)
         else:
-            server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15)
+            server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=8)
             server.ehlo()
             server.starttls()
             server.ehlo()

@@ -69,6 +69,9 @@ export const truncate = (str, n = 50) => {
 
 // Get error message from Axios error
 export const getErrorMessage = (error) => {
+  if (error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')) {
+    return 'The server took too long to respond (it may be waking up from sleep). Please try again in a moment.'
+  }
   return (
     error?.response?.data?.detail ||
     error?.response?.data?.message ||

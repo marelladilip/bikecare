@@ -13,7 +13,7 @@ const getBaseUrl = () => {
 const api = axios.create({
   baseURL: getBaseUrl(),
   headers: { 'Content-Type': 'application/json' },
-  timeout: 15000,
+  timeout: 45000,
 })
 
 // Attach JWT token to every request
