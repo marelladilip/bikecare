@@ -103,7 +103,7 @@ def _send_via_smtp(to_email: str, subject: str, html_content: str, text_content:
             server.starttls()
             server.ehlo()
 
-        server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+        server.login(settings.SMTP_USER.strip(), settings.SMTP_PASSWORD.replace(" ", "").strip())
         server.sendmail(sender_email, [to_email], msg.as_string())
         server.quit()
         logger.info(f"Successfully sent OTP email to {to_email} via SMTP")
@@ -194,19 +194,22 @@ Vehicle'Nest Team • By Marella Dilip
 """
 
     # 1. Try Resend HTTP API (Recommended on Render)
-    if settings.RESEND_API_KEY:
-        return _send_via_resend(to_email, subject, html_content, text_content, sender_name)
+    if settings.RESEND_API_KEY and settings.RESEND_API_KEY.strip():
+        if _send_via_resend(to_email, subject, html_content, text_content, sender_name):
+            return True
 
     # 2. Try Brevo HTTP API
-    if settings.BREVO_API_KEY:
-        return _send_via_brevo(to_email, subject, html_content, text_content, sender_name)
+    if settings.BREVO_API_KEY and settings.BREVO_API_KEY.strip():
+        if _send_via_brevo(to_email, subject, html_content, text_content, sender_name):
+            return True
 
     # 3. Try SMTP with IPv4 forced resolution
     if settings.SMTP_USER and settings.SMTP_PASSWORD:
-        return _send_via_smtp(to_email, subject, html_content, text_content, sender_name)
+        if _send_via_smtp(to_email, subject, html_content, text_content, sender_name):
+            return True
 
     logger.warning(
-        f"[EMAIL PROVIDER NOT CONFIGURED] No RESEND_API_KEY, BREVO_API_KEY, or SMTP credentials. "
+        f"[EMAIL PROVIDER NOT CONFIGURED OR ALL FAILED] "
         f"OTP for {to_email} is: [{otp_code}]."
     )
     return False
