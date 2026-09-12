@@ -144,6 +144,38 @@ def get_fuel_analytics(
     )
 
 
+@router.put("/fuel/{record_id}", response_model=FuelResponse)
+def update_fuel_record(
+    record_id: uuid.UUID,
+    fuel_in: FuelUpdate,
+    db: Session = Depends(get_db),
+    current_user: Profile = Depends(get_current_user),
+):
+    """Update an existing fuel record."""
+    record = db.query(FuelRecord).filter(FuelRecord.id == record_id, FuelRecord.user_id == current_user.id).first()
+    if not record:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fuel record not found")
+
+    update_data = fuel_in.model_dump(exclude_unset=True)
+    for field, val in update_data.items():
+        setattr(record, field, val)
+
+    # Recalculate total if litres or price updated
+    if "litres" in update_data or "price_per_litre" in update_data:
+        if "total_amount" not in update_data or update_data["total_amount"] is None:
+            record.total_amount = round(record.litres * record.price_per_litre, 2)
+
+    db.commit()
+    db.refresh(record)
+
+    all_records = db.query(FuelRecord).filter(FuelRecord.bike_id == record.bike_id).all()
+    computed = compute_fuel_metrics(all_records)
+    for c in computed:
+        if c["id"] == record.id:
+            return c
+    return record
+
+
 @router.delete("/fuel/{record_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_fuel_record(
     record_id: uuid.UUID,

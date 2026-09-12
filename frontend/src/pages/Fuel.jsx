@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useBike } from '../context/BikeContext'
 import { fuelService } from '../services/dataServices'
-import { formatCurrency, formatOdometer, formatDate, formatNumber, todayString } from '../utils/formatters'
+import { formatCurrency, formatOdometer, formatDate, formatNumber, todayString, getErrorMessage } from '../utils/formatters'
 import toast from 'react-hot-toast'
 
 export default function Fuel() {
@@ -10,6 +10,7 @@ export default function Fuel() {
   const [analytics, setAnalytics] = useState(null)
   const [loading, setLoading] = useState(false)
   const [showModal, setShowModal] = useState(false)
+  const [editingRecord, setEditingRecord] = useState(null)
   const [saving, setSaving] = useState(false)
 
   const [form, setForm] = useState({
@@ -58,6 +59,34 @@ export default function Fuel() {
       ? (Number(form.litres) * Number(form.price_per_litre)).toFixed(2)
       : '0.00'
 
+  const openAddModal = () => {
+    setEditingRecord(null)
+    setForm({
+      date: todayString(),
+      odometer: activeBike?.current_odometer || '',
+      litres: '',
+      price_per_litre: '105.00',
+      petrol_station: '',
+      is_full_tank: true,
+      notes: '',
+    })
+    setShowModal(true)
+  }
+
+  const openEditModal = (record) => {
+    setEditingRecord(record)
+    setForm({
+      date: record.date ? record.date.split('T')[0] : todayString(),
+      odometer: record.odometer,
+      litres: record.litres,
+      price_per_litre: record.price_per_litre,
+      petrol_station: record.petrol_station || '',
+      is_full_tank: record.is_full_tank ?? true,
+      notes: record.notes || '',
+    })
+    setShowModal(true)
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!activeBike) {
@@ -66,7 +95,7 @@ export default function Fuel() {
     }
     setSaving(true)
     try {
-      await fuelService.create(activeBike.id, {
+      const payload = {
         date: form.date,
         odometer: Number(form.odometer),
         litres: Number(form.litres),
@@ -75,35 +104,36 @@ export default function Fuel() {
         petrol_station: form.petrol_station || null,
         is_full_tank: form.is_full_tank,
         notes: form.notes || null,
-      })
-      toast.success('Fuel log added! Mileage updated ⛽')
+      }
+
+      if (editingRecord) {
+        await fuelService.update(editingRecord.id, payload)
+        toast.success('Fuel log updated! ⛽')
+      } else {
+        await fuelService.create(activeBike.id, payload)
+        toast.success('Fuel log added! Mileage updated ⛽')
+      }
+
       setShowModal(false)
-      setForm({
-        date: todayString(),
-        odometer: '',
-        litres: '',
-        price_per_litre: '',
-        petrol_station: '',
-        is_full_tank: true,
-        notes: '',
-      })
+      setEditingRecord(null)
       loadData(activeBike.id)
       fetchBikes()
     } catch (err) {
-      toast.error('Failed to save fuel log')
+      toast.error(getErrorMessage(err) || 'Failed to save fuel log')
     } finally {
       setSaving(false)
     }
   }
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this fuel record?')) return
+    if (!window.confirm('Are you sure you want to delete this fuel record?')) return
     try {
       await fuelService.delete(id)
       toast.success('Record deleted')
       loadData(activeBike.id)
-    } catch {
-      toast.error('Failed to delete')
+      fetchBikes()
+    } catch (err) {
+      toast.error(getErrorMessage(err) || 'Failed to delete')
     }
   }
 
@@ -118,10 +148,7 @@ export default function Fuel() {
           </p>
         </div>
         <button
-          onClick={() => {
-            setForm((f) => ({ ...f, odometer: activeBike?.current_odometer || '' }))
-            setShowModal(true)
-          }}
+          onClick={openAddModal}
           className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors flex items-center gap-1.5"
         >
           <span>+</span> Add Refill
@@ -171,7 +198,7 @@ export default function Fuel() {
                 <th className="p-4">Total Amount</th>
                 <th className="p-4">Calculated Mileage</th>
                 <th className="p-4">Cost / KM</th>
-                <th className="p-4 text-right">Action</th>
+                <th className="p-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y" style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}>
@@ -179,21 +206,27 @@ export default function Fuel() {
                 records.map((r) => (
                   <tr key={r.id}>
                     <td className="p-4 font-medium">{formatDate(r.date)}</td>
-                    <td className="p-4">{formatOdometer(r.odometer)}</td>
+                    <td className="p-4 font-semibold">{formatOdometer(r.odometer)}</td>
                     <td className="p-4">{formatNumber(r.litres)} L</td>
                     <td className="p-4">{formatCurrency(r.price_per_litre)}</td>
                     <td className="p-4 font-semibold">{formatCurrency(r.total_amount)}</td>
                     <td className="p-4 font-medium">
-                      {r.mileage ? (
+                      {r.mileage != null ? (
                         <span className="text-emerald-500 font-semibold">{formatNumber(r.mileage)} km/L</span>
                       ) : (
                         <span className="text-xs" style={{ color: 'var(--color-muted)' }}>Initial / N/A</span>
                       )}
                     </td>
                     <td className="p-4">
-                      {r.fuel_cost_per_km ? `${formatCurrency(r.fuel_cost_per_km)}/km` : '—'}
+                      {r.fuel_cost_per_km != null ? `${formatCurrency(r.fuel_cost_per_km)}/km` : '—'}
                     </td>
-                    <td className="p-4 text-right">
+                    <td className="p-4 text-right space-x-3">
+                      <button
+                        onClick={() => openEditModal(r)}
+                        className="text-blue-500 hover:text-blue-600 text-xs font-semibold"
+                      >
+                        Edit
+                      </button>
                       <button
                         onClick={() => handleDelete(r.id)}
                         className="text-red-400 hover:text-red-500 text-xs font-medium"
@@ -215,11 +248,13 @@ export default function Fuel() {
         </div>
       </div>
 
-      {/* Add Fuel Modal */}
+      {/* Add/Edit Fuel Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
           <div className="card p-6 w-full max-w-md shadow-2xl relative">
-            <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--color-text)' }}>Add Fuel Refill</h2>
+            <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--color-text)' }}>
+              {editingRecord ? 'Edit Fuel Refill' : 'Add Fuel Refill'}
+            </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -239,7 +274,7 @@ export default function Fuel() {
                   <input
                     type="number"
                     name="odometer"
-                    placeholder="e.g. 5420"
+                    placeholder="e.g. 96600"
                     value={form.odometer}
                     required
                     onChange={handleChange}
@@ -256,7 +291,7 @@ export default function Fuel() {
                     type="number"
                     step="0.01"
                     name="litres"
-                    placeholder="e.g. 10.5"
+                    placeholder="e.g. 1.28"
                     value={form.litres}
                     required
                     onChange={handleChange}
@@ -270,7 +305,7 @@ export default function Fuel() {
                     type="number"
                     step="0.01"
                     name="price_per_litre"
-                    placeholder="e.g. 104.50"
+                    placeholder="e.g. 117.20"
                     value={form.price_per_litre}
                     required
                     onChange={handleChange}
@@ -300,7 +335,10 @@ export default function Fuel() {
               <div className="flex gap-3 justify-end mt-6">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={() => {
+                    setShowModal(false)
+                    setEditingRecord(null)
+                  }}
                   className="px-4 py-2 rounded-lg text-sm font-medium border"
                   style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
                 >
@@ -309,9 +347,9 @@ export default function Fuel() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors"
                 >
-                  {saving ? 'Saving...' : 'Save Fuel Log'}
+                  {saving ? 'Saving...' : editingRecord ? 'Update Record' : 'Save Fuel Log'}
                 </button>
               </div>
             </form>
