@@ -4,10 +4,21 @@ from uuid import UUID
 from pydantic import BaseModel, EmailStr, ConfigDict, field_validator
 
 
+class SendOTPRequest(BaseModel):
+    email: EmailStr
+    full_name: Optional[str] = None
+
+
+class OTPResponse(BaseModel):
+    message: str
+    email: str
+
+
 class UserRegister(BaseModel):
     email: EmailStr
     password: str
     full_name: Optional[str] = None
+    otp_code: str
 
     @field_validator("password")
     @classmethod

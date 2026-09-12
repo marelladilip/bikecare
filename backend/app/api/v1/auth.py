@@ -1,5 +1,6 @@
+import secrets
 import uuid
-from datetime import timedelta
+from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -13,6 +14,8 @@ from app.core.security import (
 )
 from app.api.deps import get_current_user
 from app.models.user import Profile
+from app.models.otp import EmailOTP
+from app.services.email import send_otp_email
 from app.schemas.user import (
     AuthResponse,
     ForgotPasswordRequest,
@@ -20,6 +23,8 @@ from app.schemas.user import (
     ProfileResponse,
     ProfileUpdate,
     ResetPasswordRequest,
+    SendOTPRequest,
+    OTPResponse,
     Token,
     UserLogin,
     UserRegister,
@@ -29,23 +34,100 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @router.post(
-    "/register",
-    response_model=AuthResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary="Register a new user account",
+    "/send-otp",
+    response_model=OTPResponse,
+    summary="Send a 6-digit OTP verification email for account registration",
 )
-def register(user_in: UserRegister, db: Session = Depends(get_db)):
-    """Register a new user, initialize their profile, and return an access token."""
-    existing_user = db.query(Profile).filter(Profile.email == user_in.email).first()
+def send_otp(payload: SendOTPRequest, db: Session = Depends(get_db)):
+    """Generate and dispatch a 6-digit OTP to the specified email address."""
+    email_clean = payload.email.strip().lower()
+    
+    # 1. Check if user already exists
+    existing_user = db.query(Profile).filter(Profile.email == email_clean).first()
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A user with this email address already exists",
+            detail="An account with this email address already exists. Please sign in instead.",
         )
+
+    # 2. Invalidate previous unused OTPs for this email
+    db.query(EmailOTP).filter(
+        EmailOTP.email == email_clean,
+        EmailOTP.is_used == False,
+    ).update({"is_used": True})
+    db.commit()
+
+    # 3. Generate secure 6-digit code
+    otp_code = f"{secrets.randbelow(900000) + 100000}"
+
+    # 4. Save to database
+    now = datetime.now(timezone.utc)
+    expires_at = now + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
+    otp_record = EmailOTP(
+        id=uuid.uuid4(),
+        email=email_clean,
+        otp_code=otp_code,
+        created_at=now,
+        expires_at=expires_at,
+        is_used=False,
+        attempts=0,
+    )
+    db.add(otp_record)
+    db.commit()
+
+    # 5. Dispatch Email
+    send_otp_email(to_email=email_clean, otp_code=otp_code, full_name=payload.full_name or "")
+
+    return OTPResponse(
+        message=f"A 6-digit verification code has been sent to {email_clean}.",
+        email=email_clean,
+    )
+
+
+@router.post(
+    "/register",
+    response_model=AuthResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Register a new user account with OTP verification",
+)
+def register(user_in: UserRegister, db: Session = Depends(get_db)):
+    """Verify OTP and register a new user, initializing their profile and returning an access token."""
+    email_clean = user_in.email.strip().lower()
+    
+    existing_user = db.query(Profile).filter(Profile.email == email_clean).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="An account with this email address already exists.",
+        )
+
+    # Validate OTP
+    now = datetime.now(timezone.utc)
+    otp_record = (
+        db.query(EmailOTP)
+        .filter(
+            EmailOTP.email == email_clean,
+            EmailOTP.is_used == False,
+        )
+        .order_by(EmailOTP.created_at.desc())
+        .first()
+    )
+
+    if not otp_record or not otp_record.is_valid(user_in.otp_code):
+        if otp_record:
+            otp_record.attempts += 1
+            db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification code. Please request a new OTP.",
+        )
+
+    # Mark OTP as used
+    otp_record.is_used = True
 
     user = Profile(
         id=uuid.uuid4(),
-        email=user_in.email,
+        email=email_clean,
         full_name=user_in.full_name,
         hashed_password=get_password_hash(user_in.password),
     )

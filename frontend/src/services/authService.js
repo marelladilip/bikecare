@@ -1,6 +1,11 @@
 import api from './api'
 
 export const authService = {
+  sendOtp: async (data) => {
+    const res = await api.post('/auth/send-otp', data)
+    return res.data
+  },
+
   register: async (data) => {
     const res = await api.post('/auth/register', data)
     return res.data

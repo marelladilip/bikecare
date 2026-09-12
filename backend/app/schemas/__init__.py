@@ -5,6 +5,8 @@ from app.schemas.user import (
     TokenPayload,
     ProfileResponse,
     ProfileUpdate,
+    SendOTPRequest,
+    OTPResponse,
 )
 from app.schemas.bike import BikeCreate, BikeUpdate, BikeResponse
 from app.schemas.fuel import FuelCreate, FuelUpdate, FuelResponse, FuelAnalytics

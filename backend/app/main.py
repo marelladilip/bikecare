@@ -79,6 +79,18 @@ def on_startup():
                 conn.execute(text("ALTER TABLE profiles ADD COLUMN IF NOT EXISTS hashed_password TEXT;"))
                 conn.execute(text("ALTER TABLE profiles DROP CONSTRAINT IF EXISTS profiles_id_fkey;"))
                 conn.execute(text("ALTER TABLE bikes ADD COLUMN IF NOT EXISTS vehicle_type TEXT DEFAULT 'BIKE';"))
+                conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS email_otps (
+                        id UUID PRIMARY KEY,
+                        email TEXT NOT NULL,
+                        otp_code VARCHAR(10) NOT NULL,
+                        created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                        expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                        is_used BOOLEAN NOT NULL DEFAULT FALSE,
+                        attempts INTEGER NOT NULL DEFAULT 0
+                    );
+                """))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS idx_email_otps_email ON email_otps(email);"))
                 conn.commit()
     except Exception as e:
         logger.warning(f"Startup schema sync note: {e}")
