@@ -11,9 +11,9 @@ logger = logging.getLogger("bikecare")
 
 # Initialize FastAPI application
 app = FastAPI(
-    title=settings.PROJECT_NAME,
+    title="Vehicle'Nest API",
     version="1.0.0",
-    description="Production-quality REST API for BikeCare – Bike Expense & Maintenance Tracker",
+    description="Production REST API for Vehicle'Nest – Care That Keeps You Moving",
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -78,6 +78,7 @@ def on_startup():
             with engine.connect() as conn:
                 conn.execute(text("ALTER TABLE profiles ADD COLUMN IF NOT EXISTS hashed_password TEXT;"))
                 conn.execute(text("ALTER TABLE profiles DROP CONSTRAINT IF EXISTS profiles_id_fkey;"))
+                conn.execute(text("ALTER TABLE bikes ADD COLUMN IF NOT EXISTS vehicle_type TEXT DEFAULT 'BIKE';"))
                 conn.commit()
     except Exception as e:
         logger.warning(f"Startup schema sync note: {e}")
@@ -87,7 +88,8 @@ def on_startup():
 def root():
     """Root entry point supporting GET and HEAD probes from Render/uptime monitors."""
     return {
-        "message": "Welcome to BikeCare API",
+        "message": "Welcome to Vehicle'Nest API",
+        "tagline": "Care That Keeps You Moving",
         "version": "1.0.0",
         "docs": "/docs",
         "redoc": "/redoc",

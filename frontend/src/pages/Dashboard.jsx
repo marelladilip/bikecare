@@ -39,16 +39,17 @@ export default function Dashboard() {
   if (bikes.length === 0) {
     return (
       <div className="card p-12 text-center max-w-lg mx-auto mt-10">
-        <div className="text-5xl mb-4">🏍️</div>
-        <h2 className="text-xl font-bold" style={{ color: 'var(--color-text)' }}>Welcome to BikeCare</h2>
-        <p className="text-sm mt-2 mb-6" style={{ color: 'var(--color-muted)' }}>
-          To start tracking expenses, fuel efficiency, and maintenance, please add your first bike to the garage.
+        <div className="text-5xl mb-4">🚗🏍️⚡</div>
+        <h2 className="text-xl font-bold" style={{ color: 'var(--color-text)' }}>Welcome to Vehicle'Nest</h2>
+        <p className="text-xs font-semibold text-blue-500 uppercase tracking-widest mt-1">Care That Keeps You Moving</p>
+        <p className="text-sm mt-3 mb-6" style={{ color: 'var(--color-muted)' }}>
+          To start tracking expenses, fuel/battery efficiency, and maintenance, add your first vehicle to the garage.
         </p>
         <Link
           to="/bikes"
-          className="inline-block px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors"
+          className="inline-block px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-lg shadow-blue-500/25"
         >
-          + Add Your First Bike
+          + Add Your First Vehicle
         </Link>
       </div>
     )

@@ -24,6 +24,7 @@ class Bike(Base):
     brand = Column(String, nullable=False)
     model = Column(String, nullable=False)
     variant = Column(String, nullable=True)
+    vehicle_type = Column(String, nullable=False, default="BIKE")
     registration_number = Column(String, nullable=False)
     purchase_date = Column(Date, nullable=False)
     purchase_price = Column(Numeric(12, 2), nullable=False, default=0.00)

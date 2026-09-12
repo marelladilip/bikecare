@@ -24,7 +24,7 @@ export default function Login() {
     try {
       const data = await authService.login(form)
       login(data)
-      toast.success(`Welcome back, ${data.user?.full_name || 'Rider'}!`)
+      toast.success(`Welcome back, ${data.user?.full_name || 'Driver'}!`)
       navigate('/dashboard')
     } catch (err) {
       setError(getErrorMessage(err))
@@ -34,26 +34,26 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4"
+    <div className="min-h-screen flex items-center justify-center px-4 py-8"
       style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%)' }}>
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-md animate-fade-in">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4"
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 shadow-lg animate-float"
             style={{ background: 'linear-gradient(135deg, #3b82f6, #06b6d4)' }}>
-            <span className="text-3xl">🏍️</span>
+            <span className="text-3xl">🚗</span>
           </div>
-          <h1 className="text-3xl font-bold text-white">BikeCare</h1>
-          <p className="text-slate-400 mt-1">Your bike's personal finance manager</p>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">Vehicle'Nest</h1>
+          <p className="text-blue-400 font-medium text-sm mt-1">Care That Keeps You Moving</p>
         </div>
 
         {/* Card */}
-        <div className="rounded-2xl p-8 shadow-2xl"
-          style={{ background: 'rgba(30,41,59,0.9)', border: '1px solid rgba(148,163,184,0.1)', backdropFilter: 'blur(10px)' }}>
-          <h2 className="text-xl font-semibold text-white mb-6">Sign in to your account</h2>
+        <div className="rounded-2xl p-8 shadow-2xl animate-modal-pop"
+          style={{ background: 'rgba(30,41,59,0.92)', border: '1px solid rgba(148,163,184,0.15)', backdropFilter: 'blur(12px)' }}>
+          <h2 className="text-xl font-semibold text-white mb-6">Sign in to your garage</h2>
 
           {error && (
-            <div className="mb-4 p-3 rounded-lg text-sm text-red-300"
+            <div className="mb-4 p-3 rounded-lg text-sm text-red-300 animate-fade-in"
               style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)' }}>
               {error}
             </div>
@@ -68,8 +68,8 @@ export default function Login() {
                 value={form.email}
                 onChange={handleChange}
                 required
-                placeholder="rider@example.com"
-                className="w-full px-4 py-3 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="owner@example.com"
+                className="w-full px-4 py-3 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 style={{ background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(148,163,184,0.2)' }}
               />
             </div>
@@ -86,7 +86,7 @@ export default function Login() {
                 onChange={handleChange}
                 required
                 placeholder="••••••••"
-                className="w-full px-4 py-3 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 style={{ background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(148,163,184,0.2)' }}
               />
             </div>
@@ -94,14 +94,14 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 rounded-xl font-semibold text-white transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full py-3 px-4 rounded-xl font-semibold text-white transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed btn-interactive shadow-md hover:shadow-lg"
               style={{ background: loading ? '#475569' : 'linear-gradient(135deg, #3b82f6, #06b6d4)' }}>
               {loading ? 'Signing in…' : 'Sign In'}
             </button>
           </form>
 
           <p className="mt-6 text-center text-sm text-slate-400">
-            New to BikeCare?{' '}
+            New to Vehicle'Nest?{' '}
             <Link to="/register" className="text-blue-400 hover:text-blue-300 font-medium">Create account</Link>
           </p>
 

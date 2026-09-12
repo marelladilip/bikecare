@@ -9,6 +9,7 @@ class BikeBase(BaseModel):
     brand: str
     model: str
     variant: Optional[str] = None
+    vehicle_type: Optional[str] = "BIKE"
     registration_number: Optional[str] = ""
     purchase_date: Optional[date] = Field(default_factory=date.today)
     purchase_price: Decimal = Decimal("0.00")
@@ -60,6 +61,7 @@ class BikeUpdate(BaseModel):
     brand: Optional[str] = None
     model: Optional[str] = None
     variant: Optional[str] = None
+    vehicle_type: Optional[str] = None
     registration_number: Optional[str] = None
     purchase_date: Optional[date] = None
     purchase_price: Optional[Decimal] = None

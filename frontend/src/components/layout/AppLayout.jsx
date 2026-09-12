@@ -11,9 +11,10 @@ export default function AppLayout() {
     return (
       <div className="min-h-screen flex items-center justify-center"
         style={{ background: 'var(--color-bg)' }}>
-        <div className="text-center">
-          <div className="text-4xl mb-3">🏍️</div>
-          <div className="text-slate-400 text-sm">Loading BikeCare…</div>
+        <div className="text-center animate-fade-in">
+          <div className="text-4xl mb-3 animate-float">🚗</div>
+          <div className="text-base font-bold" style={{ color: 'var(--color-text)' }}>Vehicle'Nest</div>
+          <div className="text-xs text-blue-500 mt-0.5">Care That Keeps You Moving</div>
         </div>
       </div>
     )
@@ -33,9 +34,10 @@ export default function AppLayout() {
             <Outlet />
           </div>
           <footer className="mt-12 pt-4 pb-2 border-t text-center text-xs" style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted)' }}>
-            <span>Crafted with ❤️ </span>
+            <span>Vehicle'Nest • </span>
+            <span className="italic text-slate-400">"Care That Keeps You Moving"</span>
+            <span> • Crafted with ❤️ </span>
             <span className="font-semibold text-blue-500">By Marella Dilip</span>
-            <span> • BikeCare Expense & Maintenance Tracker</span>
           </footer>
         </main>
       </div>

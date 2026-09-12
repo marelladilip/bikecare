@@ -76,3 +76,13 @@ export const getErrorMessage = (error) => {
     'An unexpected error occurred'
   )
 }
+
+// Get dynamic vehicle icon based on vehicle type
+export const getVehicleIcon = (type) => {
+  const t = (type || '').toUpperCase()
+  if (t === 'CAR' || t === 'SUV' || t === 'SEDAN' || t === 'HATCHBACK') return '🚗'
+  if (t === 'SCOOTER') return '🛵'
+  if (t === 'EV' || t === 'ELECTRIC') return '⚡'
+  if (t === 'TRUCK' || t === 'VAN' || t === 'OTHER') return '🚐'
+  return '🏍️'
+}

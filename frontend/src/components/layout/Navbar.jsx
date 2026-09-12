@@ -1,6 +1,7 @@
 import { useAuth } from '../../context/AuthContext'
 import { useBike } from '../../context/BikeContext'
 import { useTheme } from '../../context/ThemeContext'
+import { getVehicleIcon } from '../../utils/formatters'
 import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 
@@ -16,14 +17,16 @@ export default function Navbar() {
     navigate('/login')
   }
 
+  const currentIcon = activeBike ? getVehicleIcon(activeBike.vehicle_type) : '🚗'
+
   return (
     <header className="h-16 px-4 md:px-6 flex items-center justify-between border-b"
       style={{ background: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-      {/* Bike Selector dropdown */}
+      {/* Vehicle Selector dropdown */}
       <div className="flex items-center gap-3">
         {bikes.length > 0 ? (
           <div className="flex items-center gap-2">
-            <span className="text-xl">🏍️</span>
+            <span className="text-xl">{currentIcon}</span>
             <select
               value={activeBike?.id || ''}
               onChange={(e) => {
@@ -39,7 +42,7 @@ export default function Navbar() {
             >
               {bikes.map((b) => (
                 <option key={b.id} value={b.id}>
-                  {b.brand} {b.model} ({b.registration_number || 'No Reg'})
+                  {getVehicleIcon(b.vehicle_type)} {b.brand} {b.model} ({b.registration_number || 'No Reg'})
                 </option>
               ))}
             </select>
@@ -47,9 +50,9 @@ export default function Navbar() {
         ) : (
           <Link
             to="/bikes"
-            className="text-xs px-3 py-1.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700"
+            className="text-xs px-3.5 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 btn-interactive"
           >
-            + Add Your First Bike
+            + Add Your First Vehicle
           </Link>
         )}
       </div>
@@ -60,7 +63,7 @@ export default function Navbar() {
         <button
           onClick={toggleTheme}
           title="Toggle Dark/Light Mode"
-          className="p-2 rounded-lg border text-sm transition-colors"
+          className="p-2 rounded-xl border text-sm transition-colors btn-interactive"
           style={{
             borderColor: 'var(--color-border)',
             background: 'var(--color-bg)',
@@ -74,7 +77,7 @@ export default function Navbar() {
         <div className="relative">
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl border text-sm font-medium"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl border text-sm font-medium btn-interactive"
             style={{
               borderColor: 'var(--color-border)',
               background: 'var(--color-bg)',
@@ -84,13 +87,13 @@ export default function Navbar() {
             <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold">
               {user?.full_name ? user.full_name.charAt(0).toUpperCase() : 'U'}
             </div>
-            <span className="hidden sm:inline">{user?.full_name || 'Rider'}</span>
+            <span className="hidden sm:inline">{user?.full_name || 'Owner'}</span>
             <span className="text-xs">▼</span>
           </button>
 
           {dropdownOpen && (
             <div
-              className="absolute right-0 mt-2 w-48 rounded-xl shadow-xl border py-1 z-50"
+              className="absolute right-0 mt-2 w-48 rounded-xl shadow-xl border py-1 z-50 animate-modal-pop"
               style={{
                 background: 'var(--color-surface)',
                 borderColor: 'var(--color-border)',
