@@ -75,17 +75,28 @@ def send_otp(payload: SendOTPRequest, background_tasks: BackgroundTasks, db: Ses
     db.add(otp_record)
     db.commit()
 
-    # 5. Dispatch Email in background so the API responds instantly without blocking on SMTP
-    background_tasks.add_task(
-        send_otp_email,
-        to_email=email_clean,
-        otp_code=otp_code,
-        full_name=payload.full_name or "",
+    # 5. Dispatch Email in background so the API responds instantly without blocking
+    email_provider_is_ready = bool(
+        settings.RESEND_API_KEY
+        or settings.BREVO_API_KEY
+        or (settings.SMTP_USER and settings.SMTP_PASSWORD)
     )
+    if email_provider_is_ready:
+        background_tasks.add_task(
+            send_otp_email,
+            to_email=email_clean,
+            otp_code=otp_code,
+            full_name=payload.full_name or "",
+        )
+    else:
+        # Also log for backend inspection
+        send_otp_email(to_email=email_clean, otp_code=otp_code, full_name=payload.full_name or "")
 
     return OTPResponse(
-        message=f"A 6-digit verification code has been sent to {email_clean}.",
+        message=f"A 6-digit verification code has been sent to {email_clean}." if email_provider_is_ready else "Test OTP generated. Please enter the code displayed below or configure email credentials in Render.",
         email=email_clean,
+        smtp_configured=email_provider_is_ready,
+        debug_otp=otp_code if not email_provider_is_ready else None,
     )
 
 

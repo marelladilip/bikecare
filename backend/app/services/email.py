@@ -1,5 +1,9 @@
+import json
 import logging
 import smtplib
+import socket
+import urllib.request
+import urllib.error
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from app.core.config import settings
@@ -7,16 +11,115 @@ from app.core.config import settings
 logger = logging.getLogger("bikecare.email")
 
 
+def _send_via_resend(to_email: str, subject: str, html_content: str, text_content: str, sender_name: str) -> bool:
+    """Send email via Resend HTTP API (Port 443 - never blocked on cloud hosts)."""
+    try:
+        from_email = settings.EMAILS_FROM_EMAIL or "onboarding@resend.dev"
+        from_header = f"{sender_name} <{from_email}>" if "@" in from_email else from_email
+        payload = json.dumps({
+            "from": from_header,
+            "to": [to_email],
+            "subject": subject,
+            "html": html_content,
+            "text": text_content,
+        }).encode("utf-8")
+
+        req = urllib.request.Request(
+            "https://api.resend.com/emails",
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {settings.RESEND_API_KEY.strip()}",
+                "Content-Type": "application/json",
+                "User-Agent": "VehicleNest/1.0",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            if 200 <= resp.status < 300:
+                logger.info(f"Successfully sent OTP email to {to_email} via Resend API")
+                return True
+    except Exception as e:
+        logger.error(f"Resend API email error: {e}", exc_info=True)
+    return False
+
+
+def _send_via_brevo(to_email: str, subject: str, html_content: str, text_content: str, sender_name: str) -> bool:
+    """Send email via Brevo REST API (Port 443 - never blocked on cloud hosts)."""
+    try:
+        from_email = settings.EMAILS_FROM_EMAIL or settings.SMTP_USER or "dilipsaimarella@gmail.com"
+        payload = json.dumps({
+            "sender": {"name": sender_name, "email": from_email},
+            "to": [{"email": to_email}],
+            "subject": subject,
+            "htmlContent": html_content,
+            "textContent": text_content,
+        }).encode("utf-8")
+
+        req = urllib.request.Request(
+            "https://api.brevo.com/v3/smtp/email",
+            data=payload,
+            headers={
+                "api-key": settings.BREVO_API_KEY.strip(),
+                "Content-Type": "application/json",
+                "User-Agent": "VehicleNest/1.0",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            if 200 <= resp.status < 300:
+                logger.info(f"Successfully sent OTP email to {to_email} via Brevo API")
+                return True
+    except Exception as e:
+        logger.error(f"Brevo API email error: {e}", exc_info=True)
+    return False
+
+
+def _send_via_smtp(to_email: str, subject: str, html_content: str, text_content: str, sender_name: str) -> bool:
+    """Send email via SMTP with IPv4 forced socket connection."""
+    sender_email = settings.EMAILS_FROM_EMAIL or settings.SMTP_USER
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = f"{sender_name} <{sender_email}>"
+        msg["To"] = to_email
+
+        msg.attach(MIMEText(text_content, "plain"))
+        msg.attach(MIMEText(html_content, "html"))
+
+        # Resolve host explicitly to IPv4 to prevent Linux [Errno 101] Network is unreachable on IPv6
+        host = settings.SMTP_HOST
+        try:
+            addr_info = socket.getaddrinfo(host, settings.SMTP_PORT, socket.AF_INET, socket.SOCK_STREAM)
+            if addr_info:
+                host = addr_info[0][4][0]
+        except Exception:
+            pass
+
+        if settings.SMTP_PORT == 465:
+            server = smtplib.SMTP_SSL(host, settings.SMTP_PORT, timeout=8)
+        else:
+            server = smtplib.SMTP(host, settings.SMTP_PORT, timeout=8)
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
+
+        server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+        server.sendmail(sender_email, [to_email], msg.as_string())
+        server.quit()
+        logger.info(f"Successfully sent OTP email to {to_email} via SMTP")
+        return True
+    except Exception as exc:
+        logger.error(f"Failed to send OTP email to {to_email} via SMTP: {exc}")
+        return False
+
+
 def send_otp_email(to_email: str, otp_code: str, full_name: str = "") -> bool:
     """
-    Sends a 6-digit OTP verification email via SMTP (e.g. Gmail).
-    If SMTP credentials are not configured, logs the OTP for development.
+    Dispatches a 6-digit OTP verification email via Resend API, Brevo API, or SMTP.
     """
     subject = f"{otp_code} is your Vehicle'Nest verification code"
     sender_name = settings.EMAILS_FROM_NAME or "Vehicle'Nest"
-    sender_email = settings.EMAILS_FROM_EMAIL or settings.SMTP_USER
 
-    # Plain text version
     name_str = f" {full_name}" if full_name else ""
     text_content = f"""Hello{name_str},
 
@@ -28,10 +131,7 @@ Care That Keeps You Moving
 Vehicle'Nest Team • By Marella Dilip
 """
 
-    # Greeting for HTML
     greeting_html = f"Hi <strong>{full_name}</strong>," if full_name else "Hi there,"
-
-    # Rich HTML version
     html_content = f"""<!DOCTYPE html>
 <html>
 <head>
@@ -93,40 +193,20 @@ Vehicle'Nest Team • By Marella Dilip
 </html>
 """
 
-    # Check if SMTP configuration is provided
-    if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
-        logger.warning(
-            f"[OTP EMAIL NOT CONFIGURED] No SMTP credentials provided in environment. "
-            f"Generated OTP for {to_email} is: [{otp_code}]. "
-            f"Set SMTP_USER and SMTP_PASSWORD in .env or Render environment variables to send real emails."
-        )
-        return False
+    # 1. Try Resend HTTP API (Recommended on Render)
+    if settings.RESEND_API_KEY:
+        return _send_via_resend(to_email, subject, html_content, text_content, sender_name)
 
-    try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"] = f"{sender_name} <{sender_email}>"
-        msg["To"] = to_email
+    # 2. Try Brevo HTTP API
+    if settings.BREVO_API_KEY:
+        return _send_via_brevo(to_email, subject, html_content, text_content, sender_name)
 
-        part1 = MIMEText(text_content, "plain")
-        part2 = MIMEText(html_content, "html")
-        msg.attach(part1)
-        msg.attach(part2)
+    # 3. Try SMTP with IPv4 forced resolution
+    if settings.SMTP_USER and settings.SMTP_PASSWORD:
+        return _send_via_smtp(to_email, subject, html_content, text_content, sender_name)
 
-        # Connect to SMTP server
-        if settings.SMTP_PORT == 465:
-            server = smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, timeout=8)
-        else:
-            server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=8)
-            server.ehlo()
-            server.starttls()
-            server.ehlo()
-
-        server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-        server.sendmail(sender_email, [to_email], msg.as_string())
-        server.quit()
-        logger.info(f"Successfully sent OTP email to {to_email}")
-        return True
-    except Exception as exc:
-        logger.error(f"Failed to send OTP email to {to_email}: {exc}", exc_info=True)
-        return False
+    logger.warning(
+        f"[EMAIL PROVIDER NOT CONFIGURED] No RESEND_API_KEY, BREVO_API_KEY, or SMTP credentials. "
+        f"OTP for {to_email} is: [{otp_code}]."
+    )
+    return False

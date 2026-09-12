@@ -23,6 +23,7 @@ export default function Register() {
   const [error, setError] = useState('')
   const [timer, setTimer] = useState(60)
   const [canResend, setCanResend] = useState(false)
+  const [otpMeta, setOtpMeta] = useState(null)
 
   // Countdown timer for OTP resend
   useEffect(() => {
@@ -63,11 +64,16 @@ export default function Register() {
     setLoading(true)
     setError('')
     try {
-      await authService.sendOtp({
+      const res = await authService.sendOtp({
         email: form.email,
         full_name: form.full_name,
       })
-      toast.success(`Verification code sent to ${form.email} ✉️`)
+      setOtpMeta(res)
+      if (res?.smtp_configured) {
+        toast.success(`Verification code sent to ${form.email} ✉️`)
+      } else {
+        toast.success("Verification code generated! (SMTP not configured on Render)")
+      }
       setStep(2)
       setTimer(60)
       setCanResend(false)
@@ -84,11 +90,12 @@ export default function Register() {
     setLoading(true)
     setError('')
     try {
-      await authService.sendOtp({
+      const res = await authService.sendOtp({
         email: form.email,
         full_name: form.full_name,
       })
-      toast.success(`New code sent to ${form.email} ✉️`)
+      setOtpMeta(res)
+      toast.success(`New code generated! ✉️`)
       setTimer(60)
       setCanResend(false)
     } catch (err) {
@@ -290,6 +297,29 @@ export default function Register() {
                   Edit Email
                 </button>
               </div>
+
+              {/* If SMTP is not yet configured in Render environment variables, provide test OTP */}
+              {otpMeta && !otpMeta.smtp_configured && otpMeta.debug_otp && (
+                <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs animate-fade-in">
+                  <div className="flex items-center justify-between font-semibold mb-1 text-amber-300">
+                    <span>💡 SMTP Not Configured on Render</span>
+                    <button
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, otp_code: otpMeta.debug_otp }))}
+                      className="px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-100 font-mono text-[11px] underline cursor-pointer"
+                    >
+                      Click to Auto-fill
+                    </button>
+                  </div>
+                  <p className="text-[11px] opacity-90 leading-relaxed">
+                    Render doesn't have your <code className="bg-amber-950/60 px-1 py-0.5 rounded">SMTP_USER</code> credentials yet. Your test verification code is:
+                    <strong className="block text-center text-lg font-mono tracking-widest text-amber-300 my-1 bg-amber-950/40 py-1 rounded-lg">
+                      {otpMeta.debug_otp}
+                    </strong>
+                    Add SMTP credentials to Render to send real emails to your inbox.
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2 text-center">

@@ -12,6 +12,8 @@ class SendOTPRequest(BaseModel):
 class OTPResponse(BaseModel):
     message: str
     email: str
+    smtp_configured: bool = True
+    debug_otp: Optional[str] = None
 
 
 class UserRegister(BaseModel):
