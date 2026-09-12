@@ -107,7 +107,7 @@ export default function Reminders() {
         {reminders.map((r) => {
           const isCompleted = r.status === 'COMPLETED'
           return (
-            <div key={r.id} className="card p-5 relative border flex flex-col justify-between" style={{ borderColor: 'var(--color-border)' }}>
+            <div key={r.id} className="card card-hover p-5 relative border flex flex-col justify-between" style={{ borderColor: 'var(--color-border)' }}>
               <div>
                 <div className="flex justify-between items-start">
                   <span className="text-2xl">🔔</span>
@@ -129,7 +129,7 @@ export default function Reminders() {
                 {!isCompleted ? (
                   <button
                     onClick={() => handleComplete(r.id)}
-                    className="text-xs px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium"
+                    className="text-xs px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium btn-interactive"
                   >
                     ✓ Mark Done
                   </button>
@@ -150,8 +150,8 @@ export default function Reminders() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
-          <div className="card p-6 w-full max-w-md shadow-2xl relative">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="card animate-modal-pop p-6 w-full max-w-md shadow-2xl relative">
             <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--color-text)' }}>Add Reminder</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>

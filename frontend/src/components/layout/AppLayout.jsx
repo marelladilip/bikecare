@@ -29,7 +29,7 @@ export default function AppLayout() {
       <div className="flex-1 flex flex-col min-w-0">
         <Navbar />
         <main className="flex-1 p-4 md:p-6 overflow-auto flex flex-col justify-between">
-          <div>
+          <div key={location.pathname} className="animate-fade-in">
             <Outlet />
           </div>
           <footer className="mt-12 pt-4 pb-2 border-t text-center text-xs" style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted)' }}>

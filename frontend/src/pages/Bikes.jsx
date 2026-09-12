@@ -175,8 +175,8 @@ export default function Bikes() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
-          <div className="card p-6 w-full max-w-lg shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="card animate-modal-pop p-6 w-full max-w-lg shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--color-text)' }}>Add New Bike to Garage</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">

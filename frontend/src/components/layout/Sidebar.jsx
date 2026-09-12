@@ -16,47 +16,50 @@ export default function Sidebar() {
   const { activeBike } = useBike()
 
   return (
-    <aside className="hidden md:flex flex-col w-60 min-h-screen shrink-0"
+    <aside className="hidden md:flex flex-col w-60 min-h-screen shrink-0 transition-colors duration-200"
       style={{ background: 'var(--color-surface)', borderRight: '1px solid var(--color-border)' }}>
 
       {/* Logo */}
-      <div className="px-5 py-5 flex items-center gap-3"
+      <div className="px-5 py-5 flex items-center gap-3 group cursor-pointer"
         style={{ borderBottom: '1px solid var(--color-border)' }}>
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0"
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform duration-200 shadow-sm"
           style={{ background: 'linear-gradient(135deg, #3b82f6, #06b6d4)' }}>
-          🏍️
+          <span className="group-hover:animate-float inline-block">🏍️</span>
         </div>
         <div>
-          <div className="font-bold text-sm" style={{ color: 'var(--color-text)' }}>BikeCare</div>
-          <div className="text-xs" style={{ color: 'var(--color-muted)' }}>Expense Tracker</div>
+          <div className="font-bold text-sm tracking-tight" style={{ color: 'var(--color-text)' }}>BikeCare</div>
+          <div className="text-[11px] font-medium" style={{ color: 'var(--color-muted)' }}>Expense & Care Hub</div>
         </div>
       </div>
 
       {/* Active Bike Badge */}
       {activeBike && (
-        <div className="mx-3 mt-4 px-3 py-2.5 rounded-xl"
-          style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}>
-          <div className="text-xs font-medium text-blue-400 mb-0.5">Active Bike</div>
-          <div className="text-sm font-semibold truncate" style={{ color: 'var(--color-text)' }}>
+        <div className="mx-3 mt-4 px-3 py-2.5 rounded-xl border transition-all duration-200 hover:border-blue-400"
+          style={{ background: 'rgba(59,130,246,0.06)', borderColor: 'rgba(59,130,246,0.2)' }}>
+          <div className="flex items-center justify-between mb-0.5">
+            <span className="text-[11px] font-semibold text-blue-500 uppercase tracking-wider">Active Bike</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+          </div>
+          <div className="text-sm font-bold truncate" style={{ color: 'var(--color-text)' }}>
             {activeBike.brand} {activeBike.model}
           </div>
-          <div className="text-xs" style={{ color: 'var(--color-muted)' }}>
-            {activeBike.registration_number}
+          <div className="text-xs font-medium" style={{ color: 'var(--color-muted)' }}>
+            {activeBike.registration_number || 'No Reg Number'}
           </div>
         </div>
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 mt-4 space-y-0.5">
+      <nav className="flex-1 px-3 mt-4 space-y-1">
         {navItems.map(({ to, icon, label }) => (
           <NavLink
             key={to}
             to={to}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
+              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                 isActive
-                  ? 'text-blue-500'
-                  : 'hover:opacity-80'
+                  ? 'text-blue-500 shadow-sm translate-x-1'
+                  : 'hover:translate-x-1 hover:opacity-90'
               }`
             }
             style={({ isActive }) => ({
@@ -64,8 +67,8 @@ export default function Sidebar() {
               color: isActive ? '#3b82f6' : 'var(--color-muted)',
             })}
           >
-            <span className="text-base">{icon}</span>
-            {label}
+            <span className="text-base transition-transform group-hover:scale-110">{icon}</span>
+            <span>{label}</span>
           </NavLink>
         ))}
       </nav>

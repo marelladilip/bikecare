@@ -79,13 +79,13 @@ export default function Dashboard() {
         <div className="flex gap-2">
           <Link
             to="/fuel"
-            className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold"
+            className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold btn-interactive shadow-sm hover:shadow-md"
           >
             + Log Fuel
           </Link>
           <Link
             to="/expenses"
-            className="px-3.5 py-2 border rounded-xl text-xs font-semibold hover:opacity-80"
+            className="px-3.5 py-2 border rounded-xl text-xs font-semibold hover:opacity-80 btn-interactive"
             style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
           >
             + Add Expense
@@ -95,7 +95,7 @@ export default function Dashboard() {
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="card p-5">
+        <div className="card card-hover p-5">
           <div className="text-xs font-medium" style={{ color: 'var(--color-muted)' }}>Total Running Expenses</div>
           <div className="text-2xl font-bold mt-2" style={{ color: 'var(--color-text)' }}>
             {formatCurrency(kpis?.total_expenses || 0)}
@@ -103,7 +103,7 @@ export default function Dashboard() {
           <div className="text-xs text-blue-500 mt-1">Fuel + Service + Spares</div>
         </div>
 
-        <div className="card p-5">
+        <div className="card card-hover p-5">
           <div className="text-xs font-medium" style={{ color: 'var(--color-muted)' }}>Average Fuel Economy</div>
           <div className="text-2xl font-bold mt-2" style={{ color: 'var(--color-text)' }}>
             {kpis?.average_mileage ? `${formatNumber(kpis.average_mileage)} km/L` : '—'}
@@ -111,7 +111,7 @@ export default function Dashboard() {
           <div className="text-xs text-emerald-500 mt-1">Calculated efficiency</div>
         </div>
 
-        <div className="card p-5">
+        <div className="card card-hover p-5">
           <div className="text-xs font-medium" style={{ color: 'var(--color-muted)' }}>Cost Per KM</div>
           <div className="text-2xl font-bold mt-2" style={{ color: 'var(--color-text)' }}>
             {kpis?.cost_per_km ? `${formatCurrency(kpis.cost_per_km)} / km` : '—'}
@@ -119,7 +119,7 @@ export default function Dashboard() {
           <div className="text-xs text-purple-500 mt-1">Running cost rate</div>
         </div>
 
-        <div className="card p-5">
+        <div className="card card-hover p-5">
           <div className="text-xs font-medium" style={{ color: 'var(--color-muted)' }}>Current Odometer</div>
           <div className="text-2xl font-bold mt-2" style={{ color: 'var(--color-text)' }}>
             {formatOdometer(activeBike?.current_odometer || 0)}

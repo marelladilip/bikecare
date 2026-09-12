@@ -250,8 +250,8 @@ export default function Fuel() {
 
       {/* Add/Edit Fuel Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
-          <div className="card p-6 w-full max-w-md shadow-2xl relative">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="card animate-modal-pop p-6 w-full max-w-md shadow-2xl relative">
             <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--color-text)' }}>
               {editingRecord ? 'Edit Fuel Refill' : 'Add Fuel Refill'}
             </h2>
