@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useBike } from '../context/BikeContext'
 import { bikeService } from '../services/bikeService'
-import { formatCurrency, formatOdometer, todayString, getErrorMessage, getVehicleIcon } from '../utils/formatters'
+import { formatCurrency, formatOdometer, todayString, toInputDate, getErrorMessage, getVehicleIcon } from '../utils/formatters'
 import toast from 'react-hot-toast'
 
 const VEHICLE_TYPES = [
@@ -15,7 +15,9 @@ const VEHICLE_TYPES = [
 export default function Bikes() {
   const { bikes, activeBike, switchBike, fetchBikes } = useBike()
   const [showModal, setShowModal] = useState(false)
+  const [editingBike, setEditingBike] = useState(null)
   const [loading, setLoading] = useState(false)
+  
   const [form, setForm] = useState({
     brand: '',
     model: '',
@@ -32,6 +34,45 @@ export default function Bikes() {
   })
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
+
+  const handleOpenAddModal = () => {
+    setEditingBike(null)
+    setForm({
+      brand: '',
+      model: '',
+      variant: '',
+      vehicle_type: 'CAR',
+      registration_number: '',
+      purchase_date: todayString(),
+      purchase_price: '',
+      purchase_odometer: '0',
+      current_odometer: '0',
+      fuel_type: 'PETROL',
+      tank_capacity: '40',
+      expected_mileage: '16',
+    })
+    setShowModal(true)
+  }
+
+  const handleOpenEditModal = (e, bike) => {
+    e.stopPropagation()
+    setEditingBike(bike)
+    setForm({
+      brand: bike.brand || '',
+      model: bike.model || '',
+      variant: bike.variant || '',
+      vehicle_type: bike.vehicle_type || 'BIKE',
+      registration_number: bike.registration_number || '',
+      purchase_date: toInputDate(bike.purchase_date) || todayString(),
+      purchase_price: bike.purchase_price != null ? String(bike.purchase_price) : '',
+      purchase_odometer: bike.purchase_odometer != null ? String(bike.purchase_odometer) : '0',
+      current_odometer: bike.current_odometer != null ? String(bike.current_odometer) : '0',
+      fuel_type: bike.fuel_type || 'PETROL',
+      tank_capacity: bike.tank_capacity != null ? String(bike.tank_capacity) : '15',
+      expected_mileage: bike.expected_mileage != null ? String(bike.expected_mileage) : '30',
+    })
+    setShowModal(true)
+  }
 
   const handleVehicleTypeSelect = (typeId) => {
     let defaultTank = '40'
@@ -82,26 +123,18 @@ export default function Bikes() {
         expected_mileage: form.expected_mileage ? Number(form.expected_mileage) : 30,
       }
 
-      await bikeService.create(payload)
-      toast.success('Vehicle added successfully to your garage! 🚗🏍️')
+      if (editingBike) {
+        await bikeService.update(editingBike.id, payload)
+        toast.success('Vehicle details updated successfully! 🚗🏍️')
+      } else {
+        await bikeService.create(payload)
+        toast.success('Vehicle added successfully to your garage! 🚗🏍️')
+      }
+      
       setShowModal(false)
-      setForm({
-        brand: '',
-        model: '',
-        variant: '',
-        vehicle_type: 'CAR',
-        registration_number: '',
-        purchase_date: todayString(),
-        purchase_price: '',
-        purchase_odometer: '0',
-        current_odometer: '0',
-        fuel_type: 'PETROL',
-        tank_capacity: '40',
-        expected_mileage: '16',
-      })
       fetchBikes()
     } catch (err) {
-      toast.error(getErrorMessage(err) || 'Failed to add vehicle')
+      toast.error(getErrorMessage(err) || 'Failed to save vehicle')
     } finally {
       setLoading(false)
     }
@@ -129,7 +162,7 @@ export default function Bikes() {
           </p>
         </div>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={handleOpenAddModal}
           className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors flex items-center gap-1.5 btn-interactive shadow-sm hover:shadow-md"
         >
           <span>+</span> Add Vehicle
@@ -166,12 +199,19 @@ export default function Bikes() {
                   <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-2xl">
                     {icon}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     {activeBike?.id === bike.id && (
                       <span className="bg-blue-500 text-white text-xs px-2.5 py-0.5 rounded-full font-medium shadow-sm">
                         Active
                       </span>
                     )}
+                    <button
+                      onClick={(e) => handleOpenEditModal(e, bike)}
+                      className="p-1.5 text-slate-400 hover:text-blue-500 text-xs rounded-lg hover:bg-blue-500/10 transition-colors flex items-center gap-1"
+                      title="Edit Vehicle Details"
+                    >
+                      ✏️
+                    </button>
                     <button
                       onClick={(e) => handleDelete(e, bike.id)}
                       className="p-1.5 text-slate-400 hover:text-red-500 text-xs rounded-lg hover:bg-red-500/10 transition-colors"
@@ -225,7 +265,19 @@ export default function Bikes() {
         <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-[9999] overflow-y-auto">
           <div className="card p-6 w-full max-w-lg shadow-2xl relative m-auto border"
             style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface)' }}>
-            <h2 className="text-xl font-bold mb-3" style={{ color: 'var(--color-text)' }}>Add Vehicle to Garage</h2>
+            
+            <div className="flex items-center justify-between mb-4 pb-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
+              <h2 className="text-xl font-bold" style={{ color: 'var(--color-text)' }}>
+                {editingBike ? '✏️ Edit Vehicle Details' : '🚗 Add Vehicle to Garage'}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
 
             {/* Vehicle Type Selector Tabs */}
             <div className="mb-4">
@@ -391,9 +443,9 @@ export default function Bikes() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors btn-interactive shadow-md"
+                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors btn-interactive shadow-md shadow-blue-500/20"
                 >
-                  {loading ? 'Adding Vehicle...' : 'Save Vehicle'}
+                  {loading ? 'Saving...' : editingBike ? 'Update Vehicle' : '+ Add to Garage'}
                 </button>
               </div>
             </form>
