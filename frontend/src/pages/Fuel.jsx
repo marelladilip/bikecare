@@ -250,11 +250,21 @@ export default function Fuel() {
 
       {/* Add/Edit Fuel Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="card animate-modal-pop p-6 w-full max-w-md shadow-2xl relative">
-            <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--color-text)' }}>
-              {editingRecord ? 'Edit Fuel Refill' : 'Add Fuel Refill'}
-            </h2>
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-[9999] overflow-y-auto">
+          <div className="card p-6 w-full max-w-md shadow-2xl relative m-auto border"
+            style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface)' }}>
+            <div className="flex items-center justify-between mb-4 pb-2 border-b" style={{ borderColor: 'var(--color-border)' }}>
+              <h2 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>
+                {editingRecord ? '⛽ Edit Refill Log' : '⛽ Record Fuel / Charge Refill'}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>

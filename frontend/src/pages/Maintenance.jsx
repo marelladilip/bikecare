@@ -187,9 +187,9 @@ export default function Maintenance() {
 
       {/* Add Maintenance Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in overflow-y-auto">
-          <div className="card animate-modal-pop p-6 w-full max-w-md shadow-2xl relative my-8 border"
-            style={{ borderColor: 'var(--color-border)', background: 'var(--color-card)' }}>
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-[9999] overflow-y-auto">
+          <div className="card p-6 w-full max-w-lg shadow-2xl relative m-auto border"
+            style={{ borderColor: 'var(--color-border)', background: 'var(--color-card, var(--color-surface))' }}>
             
             <div className="flex items-center justify-between mb-5 pb-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
               <div className="flex items-center gap-2">

@@ -222,8 +222,9 @@ export default function Bikes() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="card animate-modal-pop p-6 w-full max-w-lg shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-[9999] overflow-y-auto">
+          <div className="card p-6 w-full max-w-lg shadow-2xl relative m-auto border"
+            style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface)' }}>
             <h2 className="text-xl font-bold mb-3" style={{ color: 'var(--color-text)' }}>Add Vehicle to Garage</h2>
 
             {/* Vehicle Type Selector Tabs */}
