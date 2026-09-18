@@ -18,12 +18,42 @@ from app.schemas.maintenance import (
 router = APIRouter(tags=["Maintenance"])
 
 
+DEFAULT_SYSTEM_CATEGORIES = [
+    "General Periodic Service",
+    "Engine Oil & Oil Filter Change",
+    "Brake Pads / Disc & Fluid Service",
+    "Chain Cleaning, Tensioning & Lubrication",
+    "Tire Replacement / Puncture Repair",
+    "Battery Replacement & Health Check",
+    "Spark Plug Replacement",
+    "Air Filter & Fuel Filter Cleaning / Change",
+    "Clutch, Belt & Transmission Service",
+    "Suspension, Shock Absorber & Fork Oil",
+    "Electrical, Wiring & Lighting Repair",
+    "Coolant Flush & Radiator Service",
+    "Self Motor / Starter Repair",
+    "Wash, Polishing & Detailing",
+    "Other Repair / Custom Modification",
+]
+
+
 @router.get("/maintenance/categories", response_model=List[MaintenanceCategoryResponse])
 def get_categories(
     db: Session = Depends(get_db),
     current_user: Profile = Depends(get_current_user),
 ):
-    """List all system and user custom maintenance categories."""
+    """List all system and user custom maintenance categories, auto-seeding defaults if empty."""
+    has_system_categories = db.query(MaintenanceCategory).filter(MaintenanceCategory.is_system == True).first()
+    if not has_system_categories:
+        for cat_name in DEFAULT_SYSTEM_CATEGORIES:
+            db.add(MaintenanceCategory(
+                id=uuid.uuid4(),
+                name=cat_name,
+                user_id=None,
+                is_system=True,
+            ))
+        db.commit()
+
     return (
         db.query(MaintenanceCategory)
         .filter((MaintenanceCategory.is_system == True) | (MaintenanceCategory.user_id == current_user.id))

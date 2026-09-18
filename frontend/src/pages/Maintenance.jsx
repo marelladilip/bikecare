@@ -38,9 +38,11 @@ export default function Maintenance() {
   const loadCategories = async () => {
     try {
       const cats = await maintenanceService.getCategories()
-      setCategories(cats || [])
       if (cats && cats.length > 0) {
-        setForm((f) => ({ ...f, category_id: cats[0].id }))
+        setCategories(cats)
+        setForm((f) => ({ ...f, category_id: f.category_id || cats[0].id }))
+      } else {
+        setCategories([])
       }
     } catch {
       setCategories([])
@@ -61,10 +63,25 @@ export default function Maintenance() {
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
+  const handleOpenModal = () => {
+    loadCategories()
+    setForm((f) => ({
+      ...f,
+      category_id: f.category_id || categories[0]?.id || '',
+      odometer: activeBike?.current_odometer || '',
+      date: todayString(),
+    }))
+    setShowModal(true)
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!activeBike) {
-      toast.error('Please select a bike')
+      toast.error('Please select a vehicle first')
+      return
+    }
+    if (!form.category_id) {
+      toast.error('Please select a service category')
       return
     }
     setSaving(true)
@@ -85,7 +102,7 @@ export default function Maintenance() {
       setShowModal(false)
       loadRecords(activeBike.id)
       fetchBikes()
-    } catch {
+    } catch (err) {
       toast.error('Failed to save maintenance record')
     } finally {
       setSaving(false)
@@ -113,11 +130,8 @@ export default function Maintenance() {
           </p>
         </div>
         <button
-          onClick={() => {
-            setForm((f) => ({ ...f, odometer: activeBike?.current_odometer || '' }))
-            setShowModal(true)
-          }}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors flex items-center gap-1.5"
+          onClick={handleOpenModal}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors flex items-center gap-1.5 shadow-md shadow-blue-500/20"
         >
           <span>+</span> Add Service Record
         </button>
@@ -140,7 +154,7 @@ export default function Maintenance() {
             <tbody className="divide-y" style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}>
               {records.length > 0 ? (
                 records.map((r) => (
-                  <tr key={r.id}>
+                  <tr key={r.id} className="hover:bg-slate-500/5 transition-colors">
                     <td className="p-4 font-medium">{formatDate(r.date)}</td>
                     <td className="p-4 font-semibold text-blue-500">{r.category_name}</td>
                     <td className="p-4">{formatOdometer(r.odometer)}</td>
@@ -152,7 +166,7 @@ export default function Maintenance() {
                     <td className="p-4 text-right">
                       <button
                         onClick={() => handleDelete(r.id)}
-                        className="text-red-400 hover:text-red-500 text-xs font-medium"
+                        className="text-red-400 hover:text-red-500 text-xs font-medium px-2 py-1 rounded hover:bg-red-500/10 transition-colors"
                       >
                         Delete
                       </button>
@@ -173,49 +187,75 @@ export default function Maintenance() {
 
       {/* Add Maintenance Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="card animate-modal-pop p-6 w-full max-w-md shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--color-text)' }}>Record Maintenance</h2>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in overflow-y-auto">
+          <div className="card animate-modal-pop p-6 w-full max-w-md shadow-2xl relative my-8 border"
+            style={{ borderColor: 'var(--color-border)', background: 'var(--color-card)' }}>
+            
+            <div className="flex items-center justify-between mb-5 pb-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🔧</span>
+                <h2 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>Record Maintenance</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-muted)' }}>Service Category *</label>
+                <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--color-text)' }}>
+                  Service Category *
+                </label>
                 <select
                   name="category_id"
                   value={form.category_id}
                   required
                   onChange={handleChange}
-                  className="w-full p-2.5 rounded-lg border text-sm"
+                  className="w-full p-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium"
                   style={{ background: 'var(--color-bg)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
                 >
+                  <option value="" disabled>-- Select Service Category --</option>
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
+                  {categories.length === 0 && (
+                    <>
+                      <option value="temp-1">General Periodic Service</option>
+                      <option value="temp-2">Engine Oil & Oil Filter Change</option>
+                      <option value="temp-3">Self Motor / Starter Repair</option>
+                      <option value="temp-4">Brake Pads / Disc Service</option>
+                    </>
+                  )}
                 </select>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-muted)' }}>Date *</label>
+                  <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--color-text)' }}>Date *</label>
                   <input
                     type="date"
                     name="date"
                     value={form.date}
                     required
                     onChange={handleChange}
-                    className="w-full p-2.5 rounded-lg border text-sm"
+                    className="w-full p-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                     style={{ background: 'var(--color-bg)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-muted)' }}>Odometer *</label>
+                  <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--color-text)' }}>Odometer (KM) *</label>
                   <input
                     type="number"
                     name="odometer"
-                    placeholder="e.g. 6000"
+                    placeholder="e.g. 96679"
                     value={form.odometer}
                     required
                     onChange={handleChange}
-                    className="w-full p-2.5 rounded-lg border text-sm"
+                    className="w-full p-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                     style={{ background: 'var(--color-bg)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
                   />
                 </div>
@@ -223,50 +263,50 @@ export default function Maintenance() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-muted)' }}>Total Cost (₹) *</label>
+                  <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--color-text)' }}>Total Cost (₹) *</label>
                   <input
                     type="number"
                     step="0.01"
                     name="cost"
-                    placeholder="e.g. 1850"
+                    placeholder="e.g. 1200"
                     value={form.cost}
                     required
                     onChange={handleChange}
-                    className="w-full p-2.5 rounded-lg border text-sm"
+                    className="w-full p-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                     style={{ background: 'var(--color-bg)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-muted)' }}>Service Center</label>
+                  <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--color-text)' }}>Service Center</label>
                   <input
                     name="service_center"
-                    placeholder="e.g. Authorised Service / Local Garage"
+                    placeholder="e.g. Home / Local Garage"
                     value={form.service_center}
                     onChange={handleChange}
-                    className="w-full p-2.5 rounded-lg border text-sm"
+                    className="w-full p-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                     style={{ background: 'var(--color-bg)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-muted)' }}>Parts Replaced / Work Description</label>
+                <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--color-text)' }}>Parts Replaced / Work Description</label>
                 <textarea
                   name="description"
                   rows={2}
-                  placeholder="Engine oil changed, air filter cleaned, chain tensioned..."
+                  placeholder="e.g. Self Motor Replacement, Oil Change..."
                   value={form.description}
                   onChange={handleChange}
-                  className="w-full p-2.5 rounded-lg border text-sm"
+                  className="w-full p-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                   style={{ background: 'var(--color-bg)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
                 />
               </div>
 
-              <div className="flex gap-3 justify-end mt-6">
+              <div className="flex gap-3 justify-end pt-2">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 rounded-lg text-sm font-medium border"
+                  className="px-4 py-2.5 rounded-xl text-sm font-medium border hover:bg-slate-500/10 transition-colors"
                   style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
                 >
                   Cancel
@@ -274,7 +314,7 @@ export default function Maintenance() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold"
+                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-all shadow-md shadow-blue-500/20 disabled:opacity-50"
                 >
                   {saving ? 'Saving...' : 'Save Record'}
                 </button>
